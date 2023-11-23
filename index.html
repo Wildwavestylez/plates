@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Car Plate Issuance</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Car Plate Issuance</h1>
+  <table id="plateTable">
+    <thead>
+      <tr>
+        <th>Station</th>
+        <th>Current Plate</th>
+        <th>Combinations per Minute</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Existing stations go here -->
+    </tbody>
+  </table>
+
+  <form id="addStationForm">
+    <label for="stationName">Station Name:</label>
+    <input type="text" id="stationName" required>
+    <label for="combinationsPerMinute">Combinations per Minute:</label>
+    <input type="number" id="combinationsPerMinute" required>
+    <button type="button" onclick="addStation()">Add Station</button>
+  </form>
+
+  <script>
+    function generatePlates(stationId, start, end, step) {
+      let currentPlate = start;
+
+      setInterval(() => {
+        document.getElementById(stationId).value = currentPlate;
+        let plateParts = currentPlate.split(" ");
+        let number = parseInt(plateParts[1]);
+        let letters = plateParts[2].split("");
+
+        if (number + step <= 999) {
+          number += step;
+        } else {
+          number = (number + step) % 1000;
+          if (number === 0) {
+            // Zvýšení první části registrační značky o 1 písmeno v abecedě
+            let firstPart = plateParts[0];
+            let firstPartCode = firstPart.charCodeAt(0);
+            if (firstPartCode < 90) {  // 90 je ASCII kód písmene 'Z'
+              firstPart = String.fromCharCode(firstPartCode + 1);
+            } else {
+              // V případě 'Z' přejdeme na 'AA'
+              firstPart = 'AA';
+            }
+            plateParts[0] = firstPart;
+          }
+
+          let letterIndex = letters.length - 1;
+          while (letterIndex >= 0) {
+            if (letters[letterIndex] !== "Z") {
+              letters[letterIndex] = String.fromCharCode(letters[letterIndex].charCodeAt(0) + 1);
+              break;
+            } else {
+              letters[letterIndex] = "A";
+              letterIndex--;
+            }
+          }
+        }
+
+        currentPlate = `${plateParts[0]} ${number.toString().padStart(3, "0")} ${letters.join("")}`;
+      }, 1000 / (step / 60));
+    }
+
+    function addStation() {
+      const stationName = document.getElementById("stationName").value;
+      const combinationsPerMinute = parseInt(document.getElementById("combinationsPerMinute").value);
+
+      const table = document.getElementById("plateTable").getElementsByTagName('tbody')[0];
+      const row = table.insertRow(table.rows.length);
+      const cell1 = row.insertCell(0);
+      const cell2 = row.insertCell(1);
+      const cell3 = row.insertCell(2);
+
+      cell1.innerHTML = stationName;
+      cell2.innerHTML = '<input type="text" id="' + stationName.toLowerCase().replace(/\s/g, '') + '" readonly>';
+      cell3.innerHTML = combinationsPerMinute;
+
+      generatePlates(stationName.toLowerCase().replace(/\s/g, ''), "AA 000 AA", "ZZ 999 ZZ", combinationsPerMinute);
+    }
+  </script>
+</body>
+</html>
