@@ -51,17 +51,33 @@
           number += step;
         } else {
           number = (number + step) % 1000;
-          if (number === 0) {
-            // Zvýšení první části registrační značky o 1 písmeno v abecedě
+
+          if (number === 0 && letters.join("") === "ZZ") {
+            // Přetečení kombinace 'ZZ', změna první části registrační značky
             let firstPart = plateParts[0];
             let firstPartCode = firstPart.charCodeAt(0);
-            if (firstPartCode < 90) {  // 90 je ASCII kód písmene 'Z'
-              firstPart = String.fromCharCode(firstPartCode + 1);
+
+            // Změna na 'AA' nebo přidání dvou písmen v abecedě
+            if (firstPart === 'ZZ') {
+              plateParts[0] = 'AA';
+            } else if (firstPartCode < 88) {  // 88 je ASCII kód písmene 'X'
+              plateParts[0] = String.fromCharCode(firstPartCode + 2);
             } else {
-              // V případě 'Z' přejdeme na 'AA'
-              firstPart = 'AA';
+              plateParts[0] = 'AA';
             }
-            plateParts[0] = firstPart;
+          }
+
+          if (letters.join("") === "ZZ") {
+            // Přetečení kombinace 'ZZ' ve třetí části
+            let firstPart = plateParts[0];
+            let firstPartCode = firstPart.charCodeAt(0);
+            
+            // Změna na 'AB' nebo přidání jednoho písmene v abecedě
+            if (firstPartCode < 90) {
+              plateParts[0] = String.fromCharCode(firstPartCode + 1);
+            } else {
+              plateParts[0] = 'AA';
+            }
           }
 
           let letterIndex = letters.length - 1;
@@ -99,3 +115,4 @@
   </script>
 </body>
 </html>
+
