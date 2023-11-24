@@ -93,6 +93,7 @@
         }
 
         currentPlate = `${plateParts[0]} ${number.toString().padStart(3, "0")} ${letters.join("")}`;
+        updateTable(stationId, currentPlate);
       }, 1000 / (step / 60));
     }
 
@@ -111,8 +112,34 @@
       cell3.innerHTML = combinationsPerMinute;
 
       generatePlates(stationName.toLowerCase().replace(/\s/g, ''), "AA 000 AA", "ZZ 999 ZZ", combinationsPerMinute);
+      updateTable(stationName.toLowerCase().replace(/\s/g, ''), "AA 000 AA");
+    }
+
+    function updateTable(stationId, currentPlate) {
+      const table = document.getElementById("plateTable").getElementsByTagName('tbody')[0];
+      const row = document.getElementById(stationId).parentNode.parentNode;
+
+      // Získání hodnoty třetí části registrační značky
+      const value = currentPlate.split(" ")[2];
+
+      // Procházení řádků a hledání pozice pro vložení nového řádku
+      let inserted = false;
+      for (let i = 0; i < table.rows.length; i++) {
+        const rowValue = table.rows[i].cells[1].getElementsByTagName('input')[0].value.split(" ")[2];
+
+        // Porovnání hodnot a vložení na správné místo
+        if (value > rowValue) {
+          table.insertBefore(row, table.rows[i]);
+          inserted = true;
+          break;
+        }
+      }
+
+      // Pokud nový řádek nebyl vložen, vložíme ho na konec tabulky
+      if (!inserted) {
+        table.appendChild(row);
+      }
     }
   </script>
 </body>
 </html>
-
