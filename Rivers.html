@@ -10,37 +10,113 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-        }
-        #map {
-            width: 100%;
+            display: flex;
+            flex-direction: column;
             height: 100vh;
         }
-        .leaflet-container {
-            background: #f0f0f0;
+        #map {
+            flex: 1;
+        }
+        #menu {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        #log {
+            flex-grow: 1;
+            background: white;
+            padding: 5px;
+            margin-top: 10px;
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
         }
     </style>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
     <div id="map"></div>
+    <div id="menu">
+        <button class="btn" onclick="startRace()">Spustit závod lahví</button>
+        <button class="btn" onclick="resetLogs()">Vymazat log</button>
+        <h3>Log cest lahví:</h3>
+        <div id="log"></div>
+    </div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializace mapy
-        var map = L.map('map').setView([50.0755, 14.4378], 13); // Praha, Česko
+        let map = L.map('map').setView([50.0755, 14.4378], 13); // Praha
 
-        // Přidání vrstvy dlaždic z OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé'
         }).addTo(map);
 
-        // Funkce pro přidání značky na mapu při kliknutí
+        let bottles = JSON.parse(localStorage.getItem('bottles')) || {}; // Načtení lahví z localStorage
+
         function onMapClick(e) {
-            L.marker(e.latlng).addTo(map)
-                .bindPopup("Láhev vhozena zde!<br>Souřadnice: " + e.latlng.toString())
+            let id = Date.now(); // Unikátní ID lahve podle času
+            let lat = e.latlng.lat;
+            let lng = e.latlng.lng;
+
+            bottles[id] = {
+                id: id,
+                start: { lat, lng },
+                log: [`Vhozena do vody na ${lat.toFixed(5)}, ${lng.toFixed(5)}`]
+            };
+
+            saveBottles(); // Uloží lahve do localStorage
+
+            let marker = L.marker(e.latlng).addTo(map)
+                .bindPopup(`Láhev vhozena zde!<br>ID: ${id}`)
                 .openPopup();
+
+            updateLog(id);
         }
 
-        // Přidání posluchače události kliknutí na mapu
+        function saveBottles() {
+            localStorage.setItem('bottles', JSON.stringify(bottles)); // Uloží lahve
+        }
+
+        function updateLog(id) {
+            let logDiv = document.getElementById('log');
+            let logEntry = bottles[id].log.join('<br>');
+            logDiv.innerHTML = `<strong>Láhev ${id}:</strong><br>${logEntry}<hr>` + logDiv.innerHTML;
+        }
+
+        function resetLogs() {
+            bottles = {};
+            localStorage.removeItem('bottles'); // Vymaže localStorage
+            document.getElementById('log').innerHTML = "";
+        }
+
+        function startRace() {
+            alert("Závod lahví ještě není implementován, ale pracujeme na tom!");
+        }
+
+        // Při načtení stránky obnovit logy
+        window.onload = function() {
+            for (let id in bottles) {
+                updateLog(id);
+            }
+        };
+
         map.on('click', onMapClick);
     </script>
 </body>
