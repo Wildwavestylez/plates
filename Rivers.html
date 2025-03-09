@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulace láhve</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+qvEtcI2xDvQNwlJH+3G31QJz7kXAJgC67I9xY/Po=" crossorigin=""/>
+  <style>
+    /* Základní reset a nastavení stylů */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+    /* Kontejner pro mapu */
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    /* Styl hlavičky */
+    .header {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 1000;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+    .header p {
+      margin: 5px 0 0;
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hlavička s názvem aplikace -->
+  <div class="header">
+    <h1>Simulace láhve</h1>
+    <p>Klikněte na mapu pro vhození láhve</p>
+  </div>
+  
+  <!-- Kontejner pro Leaflet mapu -->
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7b6+9c0PXAbFZbkID/3bDlbPZL2D1S3yQJY1q8=" crossorigin=""></script>
+  <script>
+    // Inicializace mapy – nastavíme výchozí střed (např. nad ČR) a přiblížení
+    var map = L.map('map').setView([50.0755, 14.4378], 8);
+
+    // Načtení OpenStreetMap dlaždic
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Funkce pro vytvoření markeru láhve při kliknutí
+    map.on('click', function(e) {
+      // Vytvoření markeru s vlastní ikonou (v tomto případě nahraďte URL ikonky dle potřeby)
+      var bottleIcon = L.icon({
+        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3079/3079063.png', // příklad ikonky láhve
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+      
+      var marker = L.marker(e.latlng, { icon: bottleIcon }).addTo(map);
+      marker.bindPopup("Láhev vhozena na: " + e.latlng.toString()).openPopup();
+
+      // Zde můžete přidat další logiku, například uložení logu vhození či simulaci plavby láhve
+    });
+  </script>
+</body>
+</html>
