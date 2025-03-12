@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulace Vzkazu v Láhvi</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         body {
             margin: 0;
@@ -51,11 +52,12 @@
         }
     </style>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 </head>
 <body>
     <div id="map"></div>
     <div id="menu">
-        <button class="btn" onclick="startRace()">Spustit závod lahví</button>
+        <button class="btn" onclick="fetchRivers()">Načíst řeky</button>
         <button class="btn" onclick="resetLogs()">Vymazat log</button>
         <h3>Log cest lahví:</h3>
         <div id="log"></div>
@@ -63,175 +65,150 @@
 
     <script>
         let map = L.map('map').setView([50.0755, 14.4378], 13); // Praha
+        let riversLayer = L.layerGroup().addTo(map);
+        let bottles = []; // Pole pro sledování láhví
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé'
+            attribution: '&copy; OpenStreetMap přispěvatelé'
         }).addTo(map);
 
-        let bottles = JSON.parse(localStorage.getItem('bottles')) || {}; // Načtení lahví z localStorage
-
-        function onMapClick(e) {
-            let id = Date.now(); // Unikátní ID lahve podle času
-            let lat = e.latlng.lat;
-            let lng = e.latlng.lng;
-
-            bottles[id] = {
-                id: id,
-                start: { lat, lng },
-                log: [`Vhozena do vody na ${lat.toFixed(5)}, ${lng.toFixed(5)}`]
-            };
-
-            saveBottles(); // Uloží lahve do localStorage
-
-            let marker = L.marker(e.latlng).addTo(map)
-                .bindPopup(`Láhev vhozena zde!<br>ID: ${id}`)
-                .openPopup();
-
-            updateLog(id);
-        }
-
-        function saveBottles() {
-            localStorage.setItem('bottles', JSON.stringify(bottles)); // Uloží lahve
-        }
-
-        function updateLog(id) {
-            let logDiv = document.getElementById('log');
-            let logEntry = bottles[id].log.join('<br>');
-            logDiv.innerHTML = `<strong>Láhev ${id}:</strong><br>${logEntry}<hr>` + logDiv.innerHTML;
-        }
-
-        function resetLogs() {
-            bottles = {};
-            localStorage.removeItem('bottles'); // Vymaže localStorage
-            document.getElementById('log').innerHTML = "";
-        }
-    
-    
-    let rivers = []; // Globální proměnná pro uložené řeky
-
-    // Funkce pro načítání řek a potoků
-    function fetchRivers() {
-        let bounds = map.getBounds();
-        let minLat = bounds.getSouth();
-        let maxLat = bounds.getNorth();
-        let minLon = bounds.getWest();
-        let maxLon = bounds.getEast();
-
-        // Overpass QL dotaz na řeky a potoky
-        let query = `
-            [out:json];
-            (
-                way["waterway"="river"]( ${minLat},${minLon},${maxLat},${maxLon} );
-                way["waterway"="stream"]( ${minLat},${minLon},${maxLat},${maxLon} );
-            );
-            (._;>;);
-            out body;
-        `;
-
-        // Fetch API pro Overpass dotaz
-        fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            body: 'data=' + encodeURIComponent(query),
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        // Přidání vyhledávání měst
+        let geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false
         })
-        .then(response => response.json())
-        .then(data => {
-            let nodes = {}; // Uložíme souřadnice uzlů
-            rivers = []; // Vyčistíme staré řeky
-
-            // Nejprve uložíme všechny uzly s jejich souřadnicemi
-            data.elements.forEach(element => {
-                if (element.type === "node") {
-                    nodes[element.id] = [element.lat, element.lon];
-                }
-            });
-
-            // Pak projdeme ways (řeky a potoky) a vykreslíme je
-            data.elements.forEach(element => {
-                if (element.type === "way" && element.tags.name) {
-                    let latlngs = element.nodes.map(nodeId => nodes[nodeId]); // Převedeme ID na souřadnice
-                    if (latlngs.every(coord => coord)) { // Kontrola, zda máme všechny souřadnice
-                        let riverLine = L.polyline(latlngs, { color: 'blue' }).addTo(map)
-                            .bindPopup(`Řeka/Potok: ${element.tags.name}`);
-
-                        // Uložíme do globálního seznamu
-                        rivers.push({
-                            name: element.tags.name,
-                            latlngs: latlngs,
-                            polyline: riverLine
-                        });
-                    }
-                }
-            });
-
-            console.log("Načtené řeky:", rivers);
+        .on('markgeocode', function(e) {
+            let latlng = e.geocode.center;
+            map.setView(latlng, 13); // Přesun na vyhledanou lokalitu
         })
-        .catch(error => console.error("Chyba při načítání řek: ", error));
-    }
+        .addTo(map);
 
-    // Funkce pro vhazování láhve do řeky
-    function throwBottle(e) {
-        let clickLatLng = e.latlng;
-        let nearestRiver = findNearestRiver(clickLatLng);
+        // Funkce pro načítání řek
+        function fetchRivers() {
+            let bounds = map.getBounds();
+            let overpassQuery = `
+                [out:json];
+                (
+                    way["waterway"="river"](${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()});
+                    way["waterway"="stream"](${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()});
+                );
+                out geom;
+            `;
+            let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
-        if (nearestRiver) {
-            let timestamp = new Date().toLocaleString(); // Datum a čas vhození
-            let logEntry = `🫙 Láhev vhozena do ${nearestRiver.name} dne ${timestamp} [${clickLatLng.lat.toFixed(5)}, ${clickLatLng.lng.toFixed(5)}]`;
-            document.getElementById("log").innerHTML += `<p>${logEntry}</p>`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    riversLayer.clearLayers();
+                    data.elements.forEach(element => {
+                        if (element.type === "way" && element.geometry) {
+                            let riverCoords = element.geometry.map(p => [p.lat, p.lon]);
+                            let riverName = element.tags.name || "Neznámá řeka";
 
-            // Zobrazíme láhev na mapě
-            L.marker(clickLatLng, { icon: bottleIcon }).addTo(map)
-                .bindPopup(logEntry);
-        } else {
-            alert("Láhev musí být vhozena do řeky!");
+                            let riverLine = L.polyline(riverCoords, { color: 'blue' })
+                                .bindPopup(riverName)
+                                .addTo(riversLayer);
+                        }
+                    });
+                })
+                .catch(error => console.error("Chyba při načítání řek:", error));
         }
-    }
+// Najde nejbližší bod na řece pro vhození láhve
+function findNearestRiverPoint(lat, lng) {
+    let minDist = Infinity;
+    let nearestPoint = null;
 
-    // Funkce pro nalezení nejbližší řeky k bodu
-    function findNearestRiver(latlng) {
-        let minDist = Infinity;
-        let closestRiver = null;
-
-        rivers.forEach(river => {
-            river.latlngs.forEach(point => {
-                let dist = latlng.distanceTo(L.latLng(point[0], point[1]));
+    riversLayer.eachLayer(layer => {
+        if (layer instanceof L.Polyline) {
+            layer.getLatLngs().forEach(point => {
+                let dist = map.distance([lat, lng], point);
                 if (dist < minDist) {
                     minDist = dist;
-                    closestRiver = river;
+                    nearestPoint = point;
                 }
             });
-        });
-
-        return minDist < 100 ? closestRiver : null; // Pokud je blíž než 100 m, bereme ji
-    }
-
-    // Vlastní ikonka láhve
-    let bottleIcon = L.icon({
-        iconUrl: 'https://i.imgur.com/W3QmL7p.png', // Ikonka láhve
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        }
     });
 
-    // Přidáme event listener pro vhazování lahví
-    map.on('click', throwBottle);
+    return nearestPoint;
+}
 
-    // Načtení řek při startu
-    map.on('load', fetchRivers);
-    map.on('moveend', fetchRivers); // Přenačtení po posunutí mapy
+// Funkce pro vhození láhve do řeky
+function throwBottle(lat, lng) {
+    let nearestPoint = findNearestRiverPoint(lat, lng);
+    if (!nearestPoint) {
+        alert("Nenalezena žádná blízká řeka.");
+        return;
+    }
 
+    let bottleIcon = L.divIcon({
+        className: 'leaflet-div-icon',
+        html: `<img src="https://i.imgur.com/SWlnHG2.jpg" alt="Bottle" style="width: 25px; height: 50px;">`,
+        iconSize: [25, 50]
+    });
 
-        function startRace() {
-            alert("Závod lahví ještě není implementován, ale pracujeme na tom!");
-        }
+    let bottle = L.marker(nearestPoint, { icon: bottleIcon }).addTo(map);
+    bottles.push({ bottle: bottle, position: nearestPoint, riverPath: getRiverPath(nearestPoint) });
 
-        // Při načtení stránky obnovit logy
-        window.onload = function() {
-            for (let id in bottles) {
-                updateLog(id);
+    logMessage(`Láhev byla vhozena do řeky na ${nearestPoint.lat}, ${nearestPoint.lng}`);
+
+    moveBottle(bottle);
+}
+
+// Funkce pro zjištění cesty řeky po směru toku
+function getRiverPath(startPoint) {
+    let selectedRiver = null;
+    let riverPath = [];
+
+    riversLayer.eachLayer(layer => {
+        if (layer instanceof L.Polyline) {
+            let points = layer.getLatLngs();
+            let startIndex = points.findIndex(p => p.lat === startPoint.lat && p.lng === startPoint.lng);
+
+            if (startIndex !== -1) {
+                selectedRiver = layer;
+                riverPath = points.slice(startIndex); // Cesta po řece od bodu vhození
             }
-        };
+        }
+    });
 
-        map.on('click', onMapClick);
+    return riverPath;
+}
+
+// Pohyb láhve po řece
+function moveBottle(bottle) {
+    let bottleData = bottles.find(b => b.bottle === bottle);
+    if (!bottleData || bottleData.riverPath.length < 2) return;
+
+    let nextIndex = 1;
+    function animate() {
+        if (nextIndex >= bottleData.riverPath.length) return;
+
+        let nextPoint = bottleData.riverPath[nextIndex];
+        let prevPoint = bottleData.riverPath[nextIndex - 1];
+        let distance = map.distance(prevPoint, nextPoint);
+        let duration = (distance / 19.44) * 1000; // 70 km/h v ms
+
+        bottle.setLatLng(nextPoint);
+        logMessage(`Láhev se přesunula na ${nextPoint.lat}, ${nextPoint.lng}`);
+
+        nextIndex++;
+        setTimeout(animate, duration);
+    }
+
+    animate();
+}
+
+// Logování událostí
+function logMessage(message) {
+    let log = document.getElementById('log');
+    log.innerHTML += message + '<br>';
+    log.scrollTop = log.scrollHeight;
+}
+
+// Kliknutím na mapu hodíme láhev
+map.on('click', function(e) {
+    throwBottle(e.latlng.lat, e.latlng.lng);
+});
     </script>
 </body>
 </html>
