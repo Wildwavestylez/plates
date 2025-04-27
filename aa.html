@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulátor výdeje SPZ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f3f3f3;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 15px;
+      border: 2px solid black;
+      border-radius: 10px;
+      font-size: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .plate {
+      font-size: 3.5rem;
+      font-weight: bold;
+      background: white;
+      padding: 1rem 2rem;
+      border: 4px solid black;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="info" id="info">
+    Čas: --:--:--<br>
+    Vydaná SPZ: 0
+  </div>
+
+  <div class="plate" id="plate">AA 000 AA</div>
+
+  <script>
+    // --- Nastavení ---
+    const startDate = new Date('2025-04-27T11:45:00Z'); // 27.4.2025 13:45 SELČ -> 11:45 UTC
+
+    function indexToPlate(index) {
+      const letters = (n) => 
+        String.fromCharCode(65 + Math.floor(n / 26)) + String.fromCharCode(65 + (n % 26));
+
+      const number = index % 1000;
+      index = Math.floor(index / 1000);
+
+      const rightLettersIndex = index % (26 * 26);
+      index = Math.floor(index / (26 * 26));
+
+      const leftLettersIndex = index;
+
+      return `${letters(leftLettersIndex)} ${number.toString().padStart(3, '0')} ${letters(rightLettersIndex)}`;
+    }
+
+    function updateDisplay() {
+      const now = new Date();
+      const secondsPassed = Math.floor((now - startDate) / 1000); // kolik sekund uběhlo
+      const plate = indexToPlate(secondsPassed);
+
+      document.getElementById("plate").textContent = plate;
+
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+
+      document.getElementById("info").innerHTML = `
+        Čas: ${hours}:${minutes}:${seconds}<br>
+        Vydaná SPZ: ${secondsPassed.toLocaleString('cs-CZ')}
+      `;
+    }
+
+    // --- Aktualizace každou sekundu ---
+    updateDisplay(); // hned při načtení
+    setInterval(updateDisplay, 1000); // pak každou sekundu
+
+  </script>
+</body>
+</html>
