@@ -1,90 +1,108 @@
-<!DOCTYPE html>
-<html lang="cs">
+<!DOCTYPE html><html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <title>Simulátor výdeje SPZ</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulátor SPZ a Písmenek</title>
   <style>
     body {
-      font-family: sans-serif;
-      background: #f3f3f3;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: start;
+      min-height: 100vh;
+      padding: 20px;
     }
-    .info {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 15px 20px;
-      border: 3px solid black;
-      border-radius: 12px;
-      font-size: 1.5rem;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-    }
-    .plate {
-      font-size: 6rem;
-      font-weight: bold;
+    .box {
       background: white;
-      padding: 1.5rem 3rem;
-      border: 6px solid black;
-      border-radius: 15px;
-      box-shadow: 0 0 25px rgba(0,0,0,0.3);
-      white-space: nowrap;
+      padding: 30px;
+      margin: 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      text-align: center;
+      font-size: 60px;
+      min-width: 320px;
+    }
+    .button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 22px;
+      border: none;
+      border-radius: 12px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    .button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
-<body>
+<body>  <div class="box" id="spzBox">Načítám SPZ...</div>
+  <div class="box" id="lettersBox">Načítám písmenka...</div>
+  <button class="button" onclick="restartSimulation()">Restartovat na start</button>  <script>
+    const startTime = new Date("2025-04-27T17:00:00Z").getTime(); // 19:00 SELČ je 17:00 UTC
 
-  <div class="info" id="info">
-    Čas: --:--:--<br>
-    Vydaná SPZ: 0
-  </div>
+    // SPZ simulátor proměnné
+    let spzLetters1 = "AA";
+    let spzNumber = 0;
+    let spzLetters2 = "AA";
 
-  <div class="plate" id="plate">AA 000 AA</div>
+    // Písmenkový simulátor index
+    let letterIndex = 0;
 
-  <script>
-    // --- Nastavení ---
-    const startDate = new Date('2025-04-27T11:45:00Z'); // 27.4.2025 13:45 SELČ -> 11:45 UTC
+    function updateSimulators() {
+      const now = Date.now();
+      const secondsPassed = Math.floor((now - startTime) / 1000);
 
-    function indexToPlate(index) {
-      const letters = (n) => 
-        String.fromCharCode(65 + Math.floor(n / 26)) + String.fromCharCode(65 + (n % 26));
-
-      const number = index % 1000;
-      index = Math.floor(index / 1000);
-
-      const rightLettersIndex = index % (26 * 26);
-      index = Math.floor(index / (26 * 26));
-
-      const leftLettersIndex = index;
-
-      return `${letters(leftLettersIndex)} ${number.toString().padStart(3, '0')} ${letters(rightLettersIndex)}`;
+      updateSPZ(secondsPassed);
+      updateLetters(secondsPassed);
     }
 
-    function updateDisplay() {
-      const now = new Date();
-      const secondsPassed = Math.floor((now - startDate) / 1000);
-      const plate = indexToPlate(secondsPassed);
+    function updateSPZ(steps) {
+      const totalCombinations = 26 * 26; // AA - ZZ
 
-      document.getElementById("plate").textContent = plate;
+      let number = steps % 1000;
+      let lettersProgress = Math.floor(steps / 1000);
 
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
+      let letters1Index = Math.floor(lettersProgress / totalCombinations);
+      let letters2Index = lettersProgress % totalCombinations;
 
-      document.getElementById("info").innerHTML = `
-        Čas: ${hours}:${minutes}:${seconds}<br>
-        Vydaná SPZ: ${secondsPassed.toLocaleString('cs-CZ')}
-      `;
+      let letters1 = indexToLetters(letters1Index);
+      let letters2 = indexToLetters(letters2Index);
+
+      document.getElementById("spzBox").textContent = `${letters1} ${number.toString().padStart(3, '0')} ${letters2}`;
     }
 
-    updateDisplay();
-    setInterval(updateDisplay, 1000);
-  </script>
-</body>
+    function updateLetters(steps) {
+      let text = numberToLetters(steps);
+      document.getElementById("lettersBox").textContent = text;
+    }
+
+    function indexToLetters(index) {
+      const first = String.fromCharCode(65 + Math.floor(index / 26));
+      const second = String.fromCharCode(65 + (index % 26));
+      return first + second;
+    }
+
+    function numberToLetters(number) {
+      let result = '';
+      do {
+        result = String.fromCharCode(65 + (number % 26)) + result;
+        number = Math.floor(number / 26) - 1;
+      } while (number >= 0);
+      return result;
+    }
+
+    function restartSimulation() {
+      location.reload();
+    }
+
+    // Update every second
+    updateSimulators();
+    setInterval(updateSimulators, 1000);
+
+  </script></body>
 </html>
