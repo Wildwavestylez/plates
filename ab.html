@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulátor SPZ a Písmenek</title>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .box {
+      background: white;
+      padding: 30px;
+      margin: 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      text-align: center;
+      font-size: 60px;
+      min-width: 320px;
+    }
+    .button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 22px;
+      border: none;
+      border-radius: 12px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>  <div class="box" id="spzBox">Načítám SPZ...</div>
+  <div class="box" id="lettersBox">Načítám písmenka...</div>
+  <button class="button" onclick="restartSimulation()">Restartovat na start</button>  <script>
+    const startTime = new Date("2025-05-27T17:00:00Z").getTime(); // 19:00 SELČ je 17:00 UTC
+
+    // SPZ simulátor proměnné
+    let spzLetters1 = "AA";
+    let spzNumber = 0;
+    let spzLetters2 = "AA";
+
+    // Písmenkový simulátor index
+    let letterIndex = 0;
+
+    function updateSimulators() {
+      const now = Date.now();
+      const secondsPassed = Math.floor((now - startTime) / 100);
+
+      updateSPZ(secondsPassed);
+      updateLetters(secondsPassed);
+    }
+
+    function updateSPZ(steps) {
+      const totalCombinations = 26 * 26; // AA - ZZ
+
+      let number = steps % 1000;
+      let lettersProgress = Math.floor(steps / 1000);
+
+      let letters1Index = Math.floor(lettersProgress / totalCombinations);
+      let letters2Index = lettersProgress % totalCombinations;
+
+      let letters1 = indexToLetters(letters1Index);
+      let letters2 = indexToLetters(letters2Index);
+
+      document.getElementById("spzBox").textContent = `${letters1} ${number.toString().padStart(3, '0')} ${letters2}`;
+    }
+
+    function updateLetters(steps) {
+      let text = numberToLetters(steps);
+      document.getElementById("lettersBox").textContent = text;
+    }
+
+    function indexToLetters(index) {
+      const first = String.fromCharCode(65 + Math.floor(index / 26));
+      const second = String.fromCharCode(65 + (index % 26));
+      return first + second;
+    }
+
+    function numberToLetters(number) {
+      let result = '';
+      do {
+        result = String.fromCharCode(65 + (number % 26)) + result;
+        number = Math.floor(number / 26) - 1;
+      } while (number >= 0);
+      return result;
+    }
+
+    function restartSimulation() {
+      location.reload();
+    }
+
+    // Update every second
+    updateSimulators();
+    setInterval(updateSimulators, 100);
+
+  </script></body>
+</html>
