@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulace výdeje SPZ – ORP a krabice</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; font-size: 14px;}
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    th { background: #eee; }
+    tr:nth-child(even) { background: #fafafa; }
+  </style>
+</head>
+<body>
+  <h1>Simulace výdeje SPZ – ORP a krabice</h1>
+  <p style="text-align:center"><small>(1 sekunda = 1 minuta simulace)</small></p>
+  <table>
+    <thead>
+      <tr>
+        <th>ORP</th>
+        <th>Výdej/min</th>
+        <th>Aktuální objednávka</th>
+        <th>Rozsah</th>
+        <th>Právě vydává</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <script>
+    // ---------------- GENERÁTOR SPZ ----------------
+    let currentSeries;
+
+    function initSeries(saved) {
+      if (saved) currentSeries = saved;
+      else currentSeries = { d1: 1, p1: 'A', p2: '0', num: 0 };
+    }
+
+    function formatPlate(series) {
+      return `${series.d1}${series.p1}${series.p2} ${series.num.toString().padStart(4,'0')}`;
+    }
+
+    function cloneSeries(s) {
+      return { d1: s.d1, p1: s.p1, p2: s.p2, num: s.num };
+    }
+
+    function nextPlateFrom(series) {
+      series.num++;
+      if(series.num>9999){
+        series.num=0;
+        if(series.p2<'9') series.p2=String.fromCharCode(series.p2.charCodeAt(0)+1);
+        else if(series.p1<'Z'){ series.p1=String.fromCharCode(series.p1.charCodeAt(0)+1); series.p2='0'; }
+        else if(series.d1<9){ series.d1++; series.p1='A'; series.p2='0'; }
+        else { series.d1=1; series.p1='A'; series.p2='A'; series.num=0; }
+      }
+    }
+
+    function getPlateFromSeries(startSeries, offset){
+      let s = cloneSeries(startSeries);
+      for(let i=0;i<offset;i++) nextPlateFrom(s);
+      return formatPlate(s);
+    }
+
+    // ---------------- ORP KONFIG ----------------
+    const orpConfig = [
+      { name:"Blatná", speed:[2,3], boxes:[8,12] },
+      { name:"České Budějovice", speed:[14,17], boxes:[70,100] },
+      { name:"Český Krumlov", speed:[5,7], boxes:[30,40] },
+      { name:"Dačice", speed:[2,3], boxes:[8,12] },
+      { name:"Deggendorf", speed:[10,12], boxes:[70,90] },
+      { name:"Freistadt", speed:[3,4], boxes:[10,15] },
+      { name:"Freyung", speed:[5,6], boxes:[15,25] },
+      { name:"Grafenau", speed:[2,3], boxes:[8,12] },
+      { name:"Gmünd", speed:[2,3], boxes:[8,12] },
+      { name:"Horažďovice", speed:[3,4], boxes:[12,18] },
+      { name:"Jindřichův Hradec", speed:[7,8], boxes:[35,45] },
+      { name:"Kaplice", speed:[3,4], boxes:[12,18] },
+      { name:"Klatovy", speed:[9,10], boxes:[40,60] },
+      { name:"Milevsko", speed:[3,4], boxes:[12,18] },
+      { name:"Pacov", speed:[2,3], boxes:[8,12] },
+      { name:"Passau", speed:[11,12], boxes:[70,90] },
+      { name:"Pelhřimov", speed:[6,7], boxes:[30,40] },
+      { name:"Písek", speed:[8,9], boxes:[40,50] },
+      { name:"Pocking", speed:[5,6], boxes:[20,30] },
+      { name:"Prachatice", speed:[6,7], boxes:[30,40] },
+      { name:"Regen", speed:[5,6], boxes:[20,30] },
+      { name:"Soběslav", speed:[3,4], boxes:[12,18] },
+      { name:"Strakonice", speed:[7,8], boxes:[35,45] },
+      { name:"Sušice", speed:[2,3], boxes:[10,15] },
+      { name:"Tábor", speed:[9,11], boxes:[50,60] },
+      { name:"Trhové Sviny", speed:[2,3], boxes:[8,12] },
+      { name:"Třeboň", speed:[3,4], boxes:[12,18] },
+      { name:"Týn nad Vltavou", speed:[4,5], boxes:[15,20] },
+      { name:"Vilshofen", speed:[7,8], boxes:[35,45] },
+      { name:"Vimperk", speed:[2,3], boxes:[8,12] },
+      { name:"Vodňany", speed:[3,4], boxes:[12,18] },
+      { name:"Waldkirchen", speed:[3,4], boxes:[12,18] },
+      { name:"Zwiesel", speed:[4,5], boxes:[15,25] },
+    ];
+
+    let offices=[];
+
+    function randomBetween(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+    function allocateOrder(office){
+      const boxes=randomBetween(office.boxes[0],office.boxes[1]);
+      const plates=boxes*35;
+      const startSeries=cloneSeries(currentSeries);
+      const startPlate=nextPlate();
+      let endPlate=startPlate;
+      for(let i=1;i<plates;i++) endPlate=nextPlate();
+      office.current={start:startPlate,end:endPlate,index:0,plates:plates,boxes:boxes,startSeries};
+      office.currentPlate=office.current.start;
+      office.speed=randomBetween(office.speedRange[0],office.speedRange[1]);
+    }
+
+    function initSimulation(saved){
+      if(saved){
+        offices=saved.offices;
+        currentSeries=saved.series;
+      }else{
+        offices=orpConfig.map(cfg=>({
+          name: cfg.name,
+          speedRange: cfg.speed,
+          boxes: cfg.boxes,
+          current:null,
+          currentPlate:null
+        }));
+        offices.forEach(o=>allocateOrder(o));
+      }
+    }
+
+    function tick(){
+      offices.forEach(o=>{
+        if(!o.current) allocateOrder(o);
+        for(let i=0;i<o.speed;i++){
+          o.current.index++;
+          if(o.current.index>o.current.plates){
+            allocateOrder(o);
+            o.current.index=1;
+          }
+          o.currentPlate=getPlateFromSeries(o.current.startSeries,o.current.index-1);
+        }
+      });
+      render();
+      saveState();
+    }
+
+    function render(){
+      const tbody=document.getElementById("table-body");
+      tbody.innerHTML="";
+      offices.forEach(o=>{
+        const row=`<tr>
+          <td>${o.name}</td>
+          <td>${o.speed}</td>
+          <td>${o.current.boxes} krabic (${o.current.plates} SPZ)</td>
+          <td>${o.current.start} – ${o.current.end}</td>
+          <td><b>${o.currentPlate}</b></td>
+        </tr>`;
+        tbody.innerHTML+=row;
+      });
+    }
+
+    function saveState(){
+      localStorage.setItem("spz-sim-state",JSON.stringify({series:currentSeries,offices}));
+    }
+
+    function loadState(){
+      const data=localStorage.getItem("spz-sim-state");
+      return data?JSON.parse(data):null;
+    }
+
+    const saved=loadState();
+    initSeries(saved?saved.series:null);
+    initSimulation(saved);
+
+    render();
+    setInterval(tick,1000);
+  </script>
+</body>
+</html>
