@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Simulace výdeje SPZ – Jihočeský kraj</title>
+
+
+<style>
+
+/* =====================================================
+   ZÁKLAD
+===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+
+    margin: 0;
+
+    background: #0d1117;
+
+    color: #f1f5f9;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+header {
+
+    background:
+        linear-gradient(
+            135deg,
+            #182536,
+            #10161f
+        );
+
+    border-bottom:
+        1px solid #293444;
+
+    padding: 25px 20px;
+}
+
+
+header h1 {
+
+    margin: 0 0 8px;
+
+    font-size: 28px;
+}
+
+
+header p {
+
+    margin: 0;
+
+    color: #8f9baa;
+
+    font-size: 14px;
+}
+
+
+/* =====================================================
+   HLAVNÍ KONTEJNER
+===================================================== */
+
+.container {
+
+    max-width: 1500px;
+
+    width: 100%;
+
+    margin: auto;
+
+    padding: 20px;
+}
+
+
+/* =====================================================
+   OVLÁDÁNÍ
+===================================================== */
+
+.controls {
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    margin-bottom: 20px;
+}
+
+
+button {
+
+    border: none;
+
+    border-radius: 8px;
+
+    padding: 12px 20px;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.start {
+
+    background: #20a878;
+
+    color: white;
+}
+
+
+.start:hover {
+
+    background: #188a63;
+}
+
+
+.stop {
+
+    background: #d94b4b;
+
+    color: white;
+}
+
+
+.stop:hover {
+
+    background: #b83d3d;
+}
+
+
+.reset {
+
+    background: #374151;
+
+    color: white;
+}
+
+
+.reset:hover {
+
+    background: #4b5563;
+}
+
+
+/* =====================================================
+   CENTRÁLNÍ ČÍSELNÍK
+===================================================== */
+
+.central {
+
+    background: #151c26;
+
+    border:
+        1px solid #293444;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+}
+
+
+.central-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        2fr 1fr 1fr 1fr;
+
+    gap: 15px;
+}
+
+
+.central-box {
+
+    background: #1c2531;
+
+    border-radius: 8px;
+
+    padding: 15px;
+}
+
+
+.central-box span {
+
+    display: block;
+
+    color: #7f8b9b;
+
+    font-size: 11px;
+
+    margin-bottom: 6px;
+
+    text-transform: uppercase;
+}
+
+
+.central-box strong {
+
+    font-size: 18px;
+}
+
+
+.central-plate {
+
+    font-family: monospace;
+
+    font-size: 34px !important;
+
+    letter-spacing: 2px;
+}
+
+
+/* =====================================================
+   ORP GRID
+===================================================== */
+
+.locations {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+}
+
+
+/* =====================================================
+   KARTA ORP
+===================================================== */
+
+.location {
+
+    background: #151c26;
+
+    border:
+        1px solid #293444;
+
+    border-radius: 12px;
+
+    padding: 17px;
+
+    min-width: 0;
+}
+
+
+.location-header {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        flex-start;
+
+    gap: 10px;
+
+    margin-bottom: 10px;
+}
+
+
+.location h2 {
+
+    margin: 0;
+
+    font-size: 19px;
+}
+
+
+.type {
+
+    padding:
+        4px 8px;
+
+    border-radius: 12px;
+
+    background: #27313d;
+
+    color: #9ca8b7;
+
+    font-size: 10px;
+
+    white-space: nowrap;
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status {
+
+    display: inline-block;
+
+    padding:
+        5px 9px;
+
+    border-radius: 20px;
+
+    background: #28313e;
+
+    color: #9ca8b7;
+
+    font-size: 11px;
+
+    margin-bottom: 12px;
+}
+
+
+.status.running {
+
+    background: #143b2e;
+
+    color: #54d39e;
+}
+
+
+/* =====================================================
+   AKTUÁLNÍ SPZ
+===================================================== */
+
+.current-plate {
+
+    background: #0b0f14;
+
+    border-radius: 9px;
+
+    padding: 14px;
+
+    text-align: center;
+
+    margin-bottom: 12px;
+}
+
+
+.current-plate small {
+
+    display: block;
+
+    color: #7d8998;
+
+    margin-bottom: 7px;
+
+    font-size: 11px;
+}
+
+
+.plate {
+
+    font-family: monospace;
+
+    font-size: 25px;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    white-space: nowrap;
+}
+
+
+/* =====================================================
+   INFO
+===================================================== */
+
+.info {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 7px;
+}
+
+
+.info-box {
+
+    background: #1c2531;
+
+    border-radius: 7px;
+
+    padding: 9px;
+}
+
+
+.info-box span {
+
+    display: block;
+
+    color: #7f8b9b;
+
+    font-size: 10px;
+
+    margin-bottom: 4px;
+}
+
+
+.info-box strong {
+
+    font-size: 13px;
+}
+
+
+/* =====================================================
+   PROGRESS
+===================================================== */
+
+.progress-wrapper {
+
+    margin-top: 13px;
+}
+
+
+.progress-text {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    color: #8995a5;
+
+    font-size: 11px;
+
+    margin-bottom: 5px;
+}
+
+
+.progress {
+
+    width: 100%;
+
+    height: 7px;
+
+    background: #0b0f14;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+}
+
+
+.progress-bar {
+
+    height: 100%;
+
+    width: 0%;
+
+    background: #3b9cff;
+
+    transition:
+        width 0.15s linear;
+}
+
+
+/* =====================================================
+   HISTORIE
+===================================================== */
+
+.panel {
+
+    margin-top: 20px;
+
+    background: #151c26;
+
+    border:
+        1px solid #293444;
+
+    border-radius: 12px;
+
+    overflow: hidden;
+}
+
+
+.panel-header {
+
+    padding: 16px 20px;
+
+    border-bottom:
+        1px solid #293444;
+}
+
+
+.panel-header h2 {
+
+    margin: 0;
+
+    font-size: 18px;
+}
+
+
+.table-wrapper {
+
+    overflow-x: auto;
+}
+
+
+table {
+
+    width: 100%;
+
+    border-collapse:
+        collapse;
+
+    min-width: 950px;
+}
+
+
+th,
+td {
+
+    padding:
+        11px 14px;
+
+    text-align: left;
+
+    border-bottom:
+        1px solid #242d39;
+}
+
+
+th {
+
+    color: #7f8b9b;
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+}
+
+
+td {
+
+    font-size: 13px;
+}
+
+
+.table-plate {
+
+    font-family: monospace;
+
+    font-weight: bold;
+
+    white-space: nowrap;
+}
+
+
+.active {
+
+    color: #4da6ff;
+}
+
+
+.finished {
+
+    color: #51d39c;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1100px) {
+
+    .locations {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .central-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .locations {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .central-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .central-plate {
+
+        font-size: 28px !important;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>
+        🚘 Simulace výdeje SPZ
+    </h1>
+
+    <p>
+        Distribuce registračních značek – Jihočeský kraj
+    </p>
+
+</header>
+
+
+
+<div class="container">
+
+
+<!-- ===================================================
+     OVLÁDÁNÍ
+=================================================== -->
+
+<div class="controls">
+
+    <button
+        class="start"
+        onclick="startSimulation()"
+    >
+        ▶ Spustit simulaci
+    </button>
+
+
+    <button
+        class="stop"
+        onclick="stopSimulation()"
+    >
+        ⏸ Pozastavit
+    </button>
+
+
+    <button
+        class="reset"
+        onclick="resetSimulation()"
+    >
+        ↻ Reset
+    </button>
+
+</div>
+
+
+
+<!-- ===================================================
+     CENTRÁLNÍ STAV
+=================================================== -->
+
+<div class="central">
+
+    <div class="central-grid">
+
+
+        <div class="central-box">
+
+            <span>
+                Poslední rezervovaná SPZ
+            </span>
+
+            <strong
+                class="central-plate"
+                id="centralPlate"
+            >
+                1A0 0000
+            </strong>
+
+        </div>
+
+
+        <div class="central-box">
+
+            <span>
+                Celkem objednávek
+            </span>
+
+            <strong id="totalOrders">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="central-box">
+
+            <span>
+                Celkem rezervováno
+            </span>
+
+            <strong id="totalPairs">
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="central-box">
+
+            <span>
+                Aktivní ORP
+            </span>
+
+            <strong id="activeLocations">
+                0
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ===================================================
+     ZDE JAVASCRIPT AUTOMATICKY VYGENERUJE ORP
+=================================================== -->
+
+<div
+    class="locations"
+    id="locationsContainer"
+>
+</div>
+
+
+
+<!-- ===================================================
+     HISTORIE
+=================================================== -->
+
+<div class="panel">
+
+    <div class="panel-header">
+
+        <h2>
+            📋 Historie objednávek
+        </h2>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Objednávka
+                    </th>
+
+                    <th>
+                        ORP
+                    </th>
+
+                    <th>
+                        Kategorie
+                    </th>
+
+                    <th>
+                        Krabice
+                    </th>
+
+                    <th>
+                        Páry SPZ
+                    </th>
+
+                    <th>
+                        Od
+                    </th>
+
+                    <th>
+                        Do
+                    </th>
+
+                    <th>
+                        Stav
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody
+                id="ordersTable"
+            ></tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+/* =====================================================
+   HLAVNÍ NASTAVENÍ
+===================================================== */
+
+
+/*
+1 krabice obsahuje 35 párů SPZ.
+*/
+
+const PAIRS_PER_BOX = 35;
+
+
+
+/* =====================================================
+   SEZNAM ORP
+=====================================================
+
+   ZDE SE POZDĚJI JEDNODUŠE MĚNÍ PARAMETRY.
+
+   boxesMin
+   boxesMax
+   boxesStep
+
+   speed = počet milisekund mezi jednotlivými
+           vydanými páry SPZ.
+
+===================================================== */
+
+const locations = [
+    
+        {
+        id: "BL",
+        name: "Blatná",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+    {
+        id: "CB",
+        name: "České Budějovice",
+        type: "large",
+
+        boxesMin: 40,
+        boxesMax: 100,
+        boxesStep: 10,
+
+        speed: 2000
+    },
+
+
+    {
+        id: "CK",
+        name: "Český Krumlov",
+        type: "medium",
+
+        boxesMin: 20,
+        boxesMax: 50,
+        boxesStep: 5,
+
+        speed: 4000
+    },
+
+
+    {
+        id: "DA",
+        name: "Dačice",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "JH",
+        name: "Jindřichův Hradec",
+        type: "medium",
+
+        boxesMin: 20,
+        boxesMax: 50,
+        boxesStep: 5,
+
+        speed: 3000
+    },
+
+
+    {
+        id: "KA",
+        name: "Kaplice",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "MI",
+        name: "Milevsko",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "PI",
+        name: "Písek",
+        type: "medium",
+
+        boxesMin: 20,
+        boxesMax: 50,
+        boxesStep: 5,
+
+        speed: 3000
+    },
+
+
+    {
+        id: "PR",
+        name: "Prachatice",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "SO",
+        name: "Soběslav",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "ST",
+        name: "Strakonice",
+        type: "medium",
+
+        boxesMin: 20,
+        boxesMax: 50,
+        boxesStep: 5,
+
+        speed: 3000
+    },
+
+
+    {
+        id: "TA",
+        name: "Tábor",
+        type: "large",
+
+        boxesMin: 40,
+        boxesMax: 100,
+        boxesStep: 10,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "TS",
+        name: "Trhové Sviny",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "TR",
+        name: "Třeboň",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "TY",
+        name: "Týn nad Vltavou",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "VI",
+        name: "Vimperk",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    },
+
+
+    {
+        id: "VO",
+        name: "Vodňany",
+        type: "small",
+
+        boxesMin: 5,
+        boxesMax: 15,
+        boxesStep: 1,
+
+        speed: 5000
+    }
+
+];
+
+
+/* =====================================================
+   STAV
+===================================================== */
+
+let running = false;
+
+let orderCounter = 0;
+
+let orders = [];
+
+
+/*
+Centrální číselník.
+
+Začínáme před:
+
+1A0 0001
+*/
+
+let plateState = {
+
+    first: 1,
+
+    letter: "A",
+
+    middle: 0,
+
+    serial: 0
+
+};
+
+
+
+/* =====================================================
+   POMOCNÉ FUNKCE
+===================================================== */
+
+
+/*
+-----------------------------------------------
+NÁHODNÉ ČÍSLO KRABIC
+-----------------------------------------------
+
+Například:
+
+min 20
+max 50
+step 5
+
+může vrátit:
+
+20
+25
+30
+35
+40
+45
+50
+*/
+
+function randomBoxes(location) {
+
+    const possibilities = [];
+
+
+    for (
+        let boxes = location.boxesMin;
+        boxes <= location.boxesMax;
+        boxes += location.boxesStep
+    ) {
+
+        possibilities.push(boxes);
+
+    }
+
+
+    const index =
+        Math.floor(
+            Math.random() *
+            possibilities.length
+        );
+
+
+    return possibilities[index];
+
+}
+
+
+/* =====================================================
+   FORMÁT SPZ
+===================================================== */
+
+function formatPlate(
+    first,
+    letter,
+    middle,
+    serial
+) {
+
+    return (
+
+        first +
+
+        letter +
+
+        middle +
+
+        " " +
+
+        String(serial)
+            .padStart(4, "0")
+
+    );
+
+}
+
+
+/* =====================================================
+   AKTUÁLNÍ SPZ CENTRÁLNÍHO ČÍSELNÍKU
+===================================================== */
+
+function currentCentralPlate() {
+
+    return formatPlate(
+
+        plateState.first,
+
+        plateState.letter,
+
+        plateState.middle,
+
+        plateState.serial
+
+    );
+
+}
+
+
+/* =====================================================
+   DALŠÍ SPZ
+===================================================== */
+
+function nextPlate() {
+
+
+    /*
+    ===============================================
+    1A0 0000 → 1A0 0001
+    ===============================================
+    */
+
+    plateState.serial++;
+
+
+    if (
+        plateState.serial <= 9999
+    ) {
+
+        return currentCentralPlate();
+
+    }
+
+
+    /*
+    ===============================================
+    1A0 9999 → 1A1 0000
+    ===============================================
+    */
+
+    plateState.serial = 0;
+
+    plateState.middle++;
+
+
+    if (
+        plateState.middle <= 9
+    ) {
+
+        return currentCentralPlate();
+
+    }
+
+
+    /*
+    ===============================================
+    1A9 9999 → 2A0 0000
+    ===============================================
+    */
+
+    plateState.middle = 0;
+
+    plateState.first++;
+
+
+    if (
+        plateState.first <= 9
+    ) {
+
+        return currentCentralPlate();
+
+    }
+
+
+    /*
+    ===============================================
+    9A9 9999 → 1AA 0000
+    ===============================================
+    */
+
+    plateState.first = 1;
+
+
+    /*
+    Pro dvoupísmennou řadu používáme
+    speciální stav.
+    */
+
+    plateState.twoLetters = "AA";
+
+
+    plateState.serial = 0;
+
+
+    return currentTwoLetterPlate();
+
+}
+
+
+/* =====================================================
+   DVOU-PÍSMENNÁ ŘADA
+===================================================== */
+
+function currentTwoLetterPlate() {
+
+    return (
+
+        plateState.first +
+
+        plateState.twoLetters +
+
+        " " +
+
+        String(
+            plateState.serial
+        ).padStart(4, "0")
+
+    );
+
+}
+
+
+/* =====================================================
+   DALŠÍ SPZ V DVOU-PÍSMENNÉ ŘADĚ
+===================================================== */
+
+function nextTwoLetterPlate() {
+
+
+    plateState.serial++;
+
+
+    if (
+        plateState.serial <= 9999
+    ) {
+
+        return currentTwoLetterPlate();
+
+    }
+
+
+    plateState.serial = 0;
+
+
+    let secondLetter =
+        plateState.twoLetters
+            .charCodeAt(1);
+
+
+    secondLetter++;
+
+
+    /*
+    AA → AB → AC → ... → AZ
+    */
+
+    if (
+        secondLetter <= 90
+    ) {
+
+        plateState.twoLetters =
+
+            plateState.twoLetters.charAt(0) +
+
+            String.fromCharCode(
+                secondLetter
+            );
+
+
+        return currentTwoLetterPlate();
+
+    }
+
+
+    /*
+    AZ → 2AA
+    */
+
+    plateState.twoLetters = "AA";
+
+    plateState.first++;
+
+
+    if (
+        plateState.first > 9
+    ) {
+
+        plateState.first = 1;
+
+    }
+
+
+    return currentTwoLetterPlate();
+
+}
+
+
+/* =====================================================
+   UNIVERZÁLNÍ DALŠÍ SPZ
+===================================================== */
+
+function getNextPlate() {
+
+
+    /*
+    Pokud už jsme v dvoupísmenné řadě.
+    */
+
+    if (
+        plateState.twoLetters
+    ) {
+
+        return nextTwoLetterPlate();
+
+    }
+
+
+    return nextPlate();
+
+}
+
+
+/* =====================================================
+   VYTVOŘENÍ OBJEDNÁVKY
+===================================================== */
+
+function createOrder(location) {
+
+
+    /*
+    -----------------------------------------------
+    Kolik krabic si ORP objednalo?
+    -----------------------------------------------
+    */
+
+    const boxes =
+        randomBoxes(location);
+
+
+    /*
+    1 krabice = 35 párů.
+    */
+
+    const pairs =
+        boxes *
+        PAIRS_PER_BOX;
+
+
+    /*
+    -----------------------------------------------
+    První SPZ bloku.
+    -----------------------------------------------
+    */
+
+    const start =
+        getNextPlate();
+
+
+    /*
+    -----------------------------------------------
+    Rezervace celého bloku.
+    -----------------------------------------------
+    */
+
+    let end = start;
+
+
+    for (
+        let i = 1;
+        i < pairs;
+        i++
+    ) {
+
+        end =
+            getNextPlate();
+
+    }
+
+
+    /*
+    -----------------------------------------------
+    Nové číslo objednávky.
+    -----------------------------------------------
+    */
+
+    orderCounter++;
+
+
+    const order = {
+
+        id: orderCounter,
+
+        locationId: location.id,
+
+        locationName: location.name,
+
+        type: location.type,
+
+        boxes: boxes,
+
+        pairs: pairs,
+
+        start: start,
+
+        end: end,
+
+        issued: 0,
+
+        finished: false
+
+    };
+
+
+    /*
+    ORP dostane právě tuto objednávku.
+    */
+
+    location.currentOrder =
+        order;
+
+
+    /*
+    Uložíme do historie.
+    */
+
+    orders.push(order);
+
+
+    /*
+    Aktualizace UI.
+    */
+
+    updateLocationCard(
+        location
+    );
+
+
+    updateCentralDisplay();
+
+    updateOrdersTable();
+
+    updateGlobalStats();
+
+}
+
+
+/* =====================================================
+   VÝDEJ JEDNÉ SPZ
+===================================================== */
+
+function issuePlate(location) {
+
+
+    const order =
+        location.currentOrder;
+
+
+    /*
+    Bez objednávky není co vydávat.
+    */
+
+    if (!order) {
+
+        return;
+
+    }
+
+
+    if (order.finished) {
+
+        return;
+
+    }
+
+
+    /*
+    Vypočítáme aktuální SPZ
+    podle pořadí v objednávce.
+    */
+
+    const plate =
+        plateAfter(
+            order.start,
+            order.issued
+        );
+
+
+    /*
+    Zobrazíme SPZ.
+    */
+
+    const plateElement =
+        document.getElementById(
+            "plate-" +
+            location.id
+        );
+
+
+    if (plateElement) {
+
+        plateElement.textContent =
+            plate;
+
+    }
+
+
+    /*
+    Jedna SPZ vydána.
+    */
+
+    order.issued++;
+
+
+    /*
+    -----------------------------------------------
+    PROGRESS
+    -----------------------------------------------
+    */
+
+    const percentage =
+
+        (
+            order.issued /
+            order.pairs
+        ) * 100;
+
+
+    const progress =
+        document.getElementById(
+            "progress-" +
+            location.id
+        );
+
+
+    if (progress) {
+
+        progress.style.width =
+            percentage + "%";
+
+    }
+
+
+    const count =
+        document.getElementById(
+            "count-" +
+            location.id
+        );
+
+
+    if (count) {
+
+        count.textContent =
+
+            order.issued +
+
+            " / " +
+
+            order.pairs;
+
+    }
+
+
+    /*
+    -----------------------------------------------
+    KONEC BLOKU
+    -----------------------------------------------
+    */
+
+    if (
+        order.issued >=
+        order.pairs
+    ) {
+
+
+        order.finished = true;
+
+
+        const status =
+            document.getElementById(
+                "status-" +
+                location.id
+            );
+
+
+        if (status) {
+
+            status.textContent =
+                "Blok dokončen";
+
+            status.classList.remove(
+                "running"
+            );
+
+        }
+
+
+        updateOrdersTable();
+
+
+        /*
+        -------------------------------------------
+        NOVÁ OBJEDNÁVKA
+
+        Po dokončení si ORP okamžitě
+        objedná další volný blok.
+        -------------------------------------------
+        */
+
+        setTimeout(
+            function() {
+
+                if (running) {
+
+                    createOrder(
+                        location
+                    );
+
+                }
+
+            },
+            100
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   SPZ O OFFSET DÁL
+===================================================== */
+
+function plateAfter(
+    startPlate,
+    offset
+) {
+
+
+    /*
+    ===============================================
+    1A0–9A9
+    ===============================================
+    */
+
+    let match =
+        startPlate.match(
+            /^(\d)([A-Z])(\d)\s(\d{4})$/
+        );
+
+
+    if (match) {
+
+
+        let first =
+            parseInt(match[1]);
+
+
+        let letter =
+            match[2];
+
+
+        let middle =
+            parseInt(match[3]);
+
+
+        let serial =
+            parseInt(match[4]);
+
+
+        serial += offset;
+
+
+        while (
+            serial > 9999
+        ) {
+
+            serial -= 10000;
+
+            middle++;
+
+
+            if (
+                middle > 9
+            ) {
+
+                middle = 0;
+
+                first++;
+
+            }
+
+        }
+
+
+        /*
+        -------------------------------------------
+        9A9 → 1AA
+        -------------------------------------------
+        */
+
+        if (
+            first > 9
+        ) {
+
+            return (
+
+                "1AA " +
+
+                String(serial)
+                    .padStart(4, "0")
+
+            );
+
+        }
+
+
+        return formatPlate(
+
+            first,
+
+            letter,
+
+            middle,
+
+            serial
+
+        );
+
+    }
+
+
+    /*
+    ===============================================
+    1AA–9AZ
+    ===============================================
+    */
+
+    match =
+        startPlate.match(
+            /^(\d)([A-Z])([A-Z])\s(\d{4})$/
+        );
+
+
+    if (match) {
+
+
+        let first =
+            parseInt(match[1]);
+
+
+        let letter1 =
+            match[2];
+
+
+        let letter2 =
+            match[3];
+
+
+        let serial =
+            parseInt(match[4]);
+
+
+        serial += offset;
+
+
+        while (
+            serial > 9999
+        ) {
+
+            serial -= 10000;
+
+
+            let value =
+                letter2.charCodeAt(0)
+                - 65;
+
+
+            value++;
+
+
+            if (
+                value > 25
+            ) {
+
+                value = 0;
+
+                first++;
+
+            }
+
+
+            letter2 =
+                String.fromCharCode(
+                    65 + value
+                );
+
+        }
+
+
+        return (
+
+            first +
+
+            letter1 +
+
+            letter2 +
+
+            " " +
+
+            String(serial)
+                .padStart(4, "0")
+
+        );
+
+    }
+
+
+    return "CHYBA";
+
+}
+
+
+/* =====================================================
+   VYTVOŘENÍ HTML KARET ORP
+===================================================== */
+
+function renderLocations() {
+
+
+    const container =
+        document.getElementById(
+            "locationsContainer"
+        );
+
+
+    container.innerHTML = "";
+
+
+    locations.forEach(
+        function(location) {
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "location";
+
+
+            card.innerHTML = `
+
+                <div class="location-header">
+
+                    <h2>
+                        ${location.name}
+                    </h2>
+
+                    <span class="type">
+                        ${typeName(location.type)}
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="status"
+                    id="status-${location.id}"
+                >
+                    Čeká
+                </div>
+
+
+                <div class="current-plate">
+
+                    <small>
+                        Aktuálně vydává
+                    </small>
+
+                    <div
+                        class="plate"
+                        id="plate-${location.id}"
+                    >
+                        —
+                    </div>
+
+                </div>
+
+
+                <div class="info">
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Objednávka
+                        </span>
+
+                        <strong
+                            id="order-${location.id}"
+                        >
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Krabice
+                        </span>
+
+                        <strong
+                            id="boxes-${location.id}"
+                        >
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Páry SPZ
+                        </span>
+
+                        <strong
+                            id="pairs-${location.id}"
+                        >
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Rychlost
+                        </span>
+
+                        <strong>
+                            1 / ${location.speed / 1000} s
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Začátek
+                        </span>
+
+                        <strong
+                            id="start-${location.id}"
+                        >
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="info-box">
+
+                        <span>
+                            Konec
+                        </span>
+
+                        <strong
+                            id="end-${location.id}"
+                        >
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="progress-wrapper">
+
+                    <div class="progress-text">
+
+                        <span>
+                            Výdej
+                        </span>
+
+                        <span
+                            id="count-${location.id}"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+
+                    <div class="progress">
+
+                        <div
+                            class="progress-bar"
+                            id="progress-${location.id}"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   NÁZEV TYPU
+===================================================== */
+
+function typeName(type) {
+
+
+    if (
+        type === "large"
+    ) {
+
+        return "VELKÉ ORP";
+
+    }
+
+
+    if (
+        type === "medium"
+    ) {
+
+        return "STŘEDNÍ ORP";
+
+    }
+
+
+    return "MALÉ ORP";
+
+}
+
+
+/* =====================================================
+   AKTUALIZACE KARTY
+===================================================== */
+
+function updateLocationCard(
+    location
+) {
+
+
+    const order =
+        location.currentOrder;
+
+
+    if (!order) {
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "order-" +
+        location.id
+    ).textContent =
+        order.id;
+
+
+    document.getElementById(
+        "boxes-" +
+        location.id
+    ).textContent =
+        order.boxes;
+
+
+    document.getElementById(
+        "pairs-" +
+        location.id
+    ).textContent =
+        order.pairs;
+
+
+    document.getElementById(
+        "start-" +
+        location.id
+    ).textContent =
+        order.start;
+
+
+    document.getElementById(
+        "end-" +
+        location.id
+    ).textContent =
+        order.end;
+
+
+    document.getElementById(
+        "count-" +
+        location.id
+    ).textContent =
+
+        "0 / " +
+        order.pairs;
+
+
+    document.getElementById(
+        "progress-" +
+        location.id
+    ).style.width =
+        "0%";
+
+
+    const status =
+        document.getElementById(
+            "status-" +
+            location.id
+        );
+
+
+    status.textContent =
+        "Vydává";
+
+
+    status.classList.add(
+        "running"
+    );
+
+}
+
+
+/* =====================================================
+   CENTRÁLNÍ DISPLEJ
+===================================================== */
+
+function updateCentralDisplay() {
+
+
+    let plate;
+
+
+    if (
+        plateState.twoLetters
+    ) {
+
+        plate =
+            currentTwoLetterPlate();
+
+    }
+
+    else {
+
+        plate =
+            currentCentralPlate();
+
+    }
+
+
+    document.getElementById(
+        "centralPlate"
+    ).textContent =
+        plate;
+
+}
+
+
+/* =====================================================
+   HISTORIE
+===================================================== */
+
+function updateOrdersTable() {
+
+
+    const table =
+        document.getElementById(
+            "ordersTable"
+        );
+
+
+    table.innerHTML = "";
+
+
+    orders
+        .slice()
+        .reverse()
+        .forEach(
+            function(order) {
+
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                const status =
+
+                    order.finished
+
+                        ?
+
+                        '<span class="finished">' +
+                        'Dokončeno' +
+                        '</span>'
+
+                        :
+
+                        '<span class="active">' +
+                        'Probíhá' +
+                        '</span>';
+
+
+                row.innerHTML = `
+
+                    <td>
+                        #${order.id}
+                    </td>
+
+                    <td>
+                        ${order.locationName}
+                    </td>
+
+                    <td>
+                        ${typeName(order.type)}
+                    </td>
+
+                    <td>
+                        ${order.boxes}
+                    </td>
+
+                    <td>
+                        ${order.pairs}
+                    </td>
+
+                    <td class="table-plate">
+                        ${order.start}
+                    </td>
+
+                    <td class="table-plate">
+                        ${order.end}
+                    </td>
+
+                    <td>
+                        ${status}
+                    </td>
+
+                `;
+
+
+                table.appendChild(
+                    row
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   GLOBÁLNÍ STATISTIKY
+===================================================== */
+
+function updateGlobalStats() {
+
+
+    document.getElementById(
+        "totalOrders"
+    ).textContent =
+        orders.length;
+
+
+    let totalPairs = 0;
+
+
+    orders.forEach(
+        function(order) {
+
+            totalPairs +=
+                order.pairs;
+
+        }
+    );
+
+
+    document.getElementById(
+        "totalPairs"
+    ).textContent =
+        totalPairs.toLocaleString(
+            "cs-CZ"
+        );
+
+
+    let active = 0;
+
+
+    locations.forEach(
+        function(location) {
+
+            if (
+                location.currentOrder &&
+                !location.currentOrder.finished
+            ) {
+
+                active++;
+
+            }
+
+        }
+    );
+
+
+    document.getElementById(
+        "activeLocations"
+    ).textContent =
+        active;
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+function startSimulation() {
+
+
+    if (running) {
+
+        return;
+
+    }
+
+
+    running = true;
+
+
+    /*
+    ===============================================
+    První objednávka pro každé ORP.
+
+    Pořadí je dáno seznamem locations.
+    ===============================================
+    */
+
+    locations.forEach(
+        function(location) {
+
+            if (
+                !location.currentOrder
+            ) {
+
+                createOrder(
+                    location
+                );
+
+            }
+
+        }
+    );
+
+
+    /*
+    ===============================================
+    Samostatný časovač pro každé ORP.
+    ===============================================
+    */
+
+    locations.forEach(
+        function(location) {
+
+
+            location.timer =
+                setInterval(
+                    function() {
+
+                        issuePlate(
+                            location
+                        );
+
+                    },
+                    location.speed
+                );
+
+        }
+    );
+
+
+    updateGlobalStats();
+
+}
+
+
+/* =====================================================
+   PAUZA
+===================================================== */
+
+function stopSimulation() {
+
+
+    running = false;
+
+
+    locations.forEach(
+        function(location) {
+
+
+            if (
+                location.timer
+            ) {
+
+                clearInterval(
+                    location.timer
+                );
+
+                location.timer = null;
+
+            }
+
+
+            const status =
+                document.getElementById(
+                    "status-" +
+                    location.id
+                );
+
+
+            if (
+                status &&
+                location.currentOrder &&
+                !location.currentOrder.finished
+            ) {
+
+                status.textContent =
+                    "Pozastaveno";
+
+                status.classList.remove(
+                    "running"
+                );
+
+            }
+
+        }
+    );
+
+
+    updateGlobalStats();
+
+}
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+function resetSimulation() {
+
+
+    stopSimulation();
+
+
+    orders = [];
+
+
+    orderCounter = 0;
+
+
+    /*
+    -----------------------------------------------
+    Centrální číselník zpět na začátek.
+    -----------------------------------------------
+    */
+
+    plateState = {
+
+        first: 1,
+
+        letter: "A",
+
+        middle: 0,
+
+        serial: 0
+
+    };
+
+
+    delete plateState.twoLetters;
+
+
+    /*
+    -----------------------------------------------
+    Reset ORP.
+    -----------------------------------------------
+    */
+
+    locations.forEach(
+        function(location) {
+
+            location.currentOrder =
+                null;
+
+        }
+    );
+
+
+    /*
+    Znovu vykreslíme všechny karty.
+    */
+
+    renderLocations();
+
+
+    /*
+    Centrální displej.
+    */
+
+    updateCentralDisplay();
+
+
+    /*
+    Historie.
+    */
+
+    updateOrdersTable();
+
+
+    updateGlobalStats();
+
+}
+
+
+/* =====================================================
+   INICIALIZACE
+===================================================== */
+
+renderLocations();
+
+updateCentralDisplay();
+
+updateOrdersTable();
+
+updateGlobalStats();
+
+</script>
+
+
+</body>
+
+</html>
